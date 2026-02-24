@@ -1,6 +1,6 @@
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-$u = 'https://github.com/ymkeee/bsod/raw/refs/heads/main/assets/video.wmv'
+$u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/assets/video.wmv'
 $f = "$env:TEMP\yaroslava.wmv"
 
 if (-not (Test-Path $f)) {
