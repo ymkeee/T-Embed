@@ -1,7 +1,7 @@
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
 $u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/assets/0224(2).wmv'
-$f = "$env:TEMP\yaroslava.wmv"
+$f = "$env:TEMP\yaroslava2.wmv"
 
 if (-not (Test-Path $f)) {
     Invoke-WebRequest -Uri $u -OutFile $f
