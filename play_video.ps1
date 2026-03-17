@@ -1,17 +1,19 @@
-# Принудительно скрываем окно консоли (без ошибок)
+# Устанавливаем TLS 1.2
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# Скрываем окно консоли
 try {
     $c = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);'
     $t = Add-Type -MemberDefinition $c -Name "W" -Namespace "Win" -PassThru
     $t::ShowWindow((Get-Process -Id $pid).MainWindowHandle, 0)
 } catch {}
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-# Ссылка на твой edit.mp4
+# Прямая ссылка на видео
 $u = 'https://raw.githubusercontent.com/ymkeee/T-Embed/main/assets/edit.mp4'
-# Новое уникальное имя файла
-$f = "$env:TEMP\$([System.Guid]::NewGuid().ToString()).mp4"
+# ПРАВИЛЬНЫЙ ГЕНЕРАТОР ИМЕНИ ФАЙЛА
+$f = "$env:TEMP\$([guid]::NewGuid().ToString()).mp4"
 
 try {
     Invoke-WebRequest -Uri $u -OutFile $f
@@ -28,14 +30,11 @@ try {
     $w = [Windows.Markup.XamlReader]::Load($reader)
     $v = $w.FindName("v")
 
-    # Закрытие после видео
     $v.add_MediaEnded({ $w.Close() })
-    # Блокировка попыток закрыть
     $w.Add_Closing({ $_.Cancel = $true })
 
     $w.ShowDialog() | Out-Null
 } finally {
-    # Этот блок сработает в любом случае: досмотрели видео или произошла ошибка
-    Start-Sleep -Seconds 1
+    # Удаление следов
     if (Test-Path $f) { Remove-Item -Path $f -Force }
 }
