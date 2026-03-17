@@ -2,7 +2,7 @@ Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
 # Новая ссылка на MP4
 $u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/edit.mp4'
-$f = "$env:TEMP\edit_payload.mp4"
+$f = "$env:TEMP\edit.mp4"
 
 if (-not (Test-Path $f)) {
     Invoke-WebRequest -Uri $u -OutFile $f
