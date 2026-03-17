@@ -1,27 +1,22 @@
+# 1. Hide console window immediately
 try {
-    # 1. API for Hiding Window and Blocking Input
-    $c = @'
-    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
-    [DllImport("user32.dll")] public static extern bool BlockInput(bool fBlockIt);
-'@
-    $t = Add-Type -MemberDefinition $c -Name "Win32" -Namespace "Win" -PassThru
-    
-    # Hide Console
+    $c = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);'
+    $t = Add-Type -MemberDefinition $c -Name "W" -Namespace "Win" -PassThru
     $t::ShowWindow((Get-Process -Id $pid).MainWindowHandle, 0) | Out-Null
-    
-    # BLOCK KEYBOARD AND MOUSE
-    $t::BlockInput($true)
 } catch {}
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
+# 2. Settings
 $u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/edit.mp4'
 $f = "$env:TEMP\payload_video.mp4"
 
 try {
+    # Download video
     Invoke-WebRequest -Uri $u -OutFile $f -ErrorAction Stop
 
+    # 3. Create Player UI
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         WindowStyle="None" WindowState="Maximized" Topmost="True" 
@@ -34,28 +29,17 @@ try {
     $w = [Windows.Markup.XamlReader]::Load($reader)
     $v = $w.FindName("v")
 
-    # When video ends: Unblock input and close
+    # Close window when video ends
     $v.add_MediaEnded({
-        $t::BlockInput($false)
         $w.Close()
     })
 
-    # Block Alt+F4
-    $w.Add_Closing({
-        $_.Cancel = $true
-    })
-
+    # Show the window
     $w.ShowDialog() | Out-Null
 } 
-catch {
-    # If error occurs, ensure keyboard is unblocked before exit
-    if ($t) { $t::BlockInput($false) }
-    exit
-}
+catch { exit }
 finally {
-    # Safety Unblock
-    if ($t) { $t::BlockInput($false) }
-    Start-Sleep -Seconds 1
+    # 4. Cleanup and self-destruct process
     if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
     Stop-Process -Id $pid -Force
 }
