@@ -1,14 +1,19 @@
+try {
+    $c = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);'
+    $t = Add-Type -MemberDefinition $c -Name "W" -Namespace "Win" -PassThru
+    $t::ShowWindow((Get-Process -Id $pid).MainWindowHandle, 0) | Out-Null
+} catch {}
+
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-$u = 'https://raw.githubusercontent.com/ymkeee/T-Embed/main/assets/edit.mp4'
-$f = "$env:TEMP\$([Guid]::NewGuid()).mp4"
+$u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/edit.mp4'
+$f = "$env:TEMP\payload_video.mp4"
 
 try {
-    Invoke-WebRequest -Uri $u -OutFile $f
-} catch { exit }
+    Invoke-WebRequest -Uri $u -OutFile $f -ErrorAction Stop
 
-[xml]$xaml = @"
+    $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         WindowStyle="None" WindowState="Maximized" Topmost="True" 
         Background="Black" Cursor="None" ShowInTaskbar="False">
@@ -16,13 +21,25 @@ try {
 </Window>
 "@
 
-$reader = New-Object System.Xml.XmlNodeReader $xaml
-$w = [Windows.Markup.XamlReader]::Load($reader)
-$v = $w.FindName("v")
-$v.add_MediaEnded({ $w.Close() })
-$w.Add_Closing({ $_.Cancel = $true })
+    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
+    $w = [Windows.Markup.XamlReader]::Load($reader)
+    $v = $w.FindName("v")
 
-$w.ShowDialog() | Out-Null
+    # This part handles auto-close when video finished
+    $v.add_MediaEnded({
+        $w.Close()
+    })
 
-Start-Sleep -Seconds 1
-if (Test-Path $f) { Remove-Item -Path $f -Force }
+    # This part blocks Alt+F4
+    $w.Add_Closing({
+        $_.Cancel = $true
+    })
+
+    $w.ShowDialog() | Out-Null
+} 
+catch { exit }
+finally {
+    Start-Sleep -Seconds 1
+    if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
+    Stop-Process -Id $pid -Force
+}
