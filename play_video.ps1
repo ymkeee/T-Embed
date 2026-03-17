@@ -1,11 +1,9 @@
-# Принудительно включаем TLS 1.2 для скачивания
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-$u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/edit.mp4'
-# ИСПОЛЬЗУЕМ [Guid]::NewGuid() вместо просто Guid
-$f = "$env:TEMP\$([Guid]::NewGuid()).mp4" 
+# Прямая ссылка на твое видео
+$u = 'https://raw.githubusercontent.com/ymkeee/T-Embed/main/assets/edit.mp4'
+$f = "$env:TEMP\$([Guid]::NewGuid()).mp4"
 
 try {
     Invoke-WebRequest -Uri $u -OutFile $f
@@ -27,6 +25,5 @@ $w.Add_Closing({ $_.Cancel = $true })
 
 $w.ShowDialog() | Out-Null
 
-# Очистка
 Start-Sleep -Seconds 1
 if (Test-Path $f) { Remove-Item -Path $f -Force }
