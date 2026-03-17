@@ -7,11 +7,9 @@ try {
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-# --- НАСТРОЙКИ ---
 $u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/edit.mp4'
 $f = "$env:TEMP\payload_video.mp4"
-$videoDuration = 15  # ВПИШИ СЮДА ДЛИТЕЛЬНОСТЬ ВИДЕО В СЕКУНДАХ (например, 15)
-# -----------------
+$videoDuration = 15 # Укажи здесь длительность видео в секундах
 
 try {
     Invoke-WebRequest -Uri $u -OutFile $f -ErrorAction Stop
@@ -28,20 +26,23 @@ try {
     $w = [Windows.Markup.XamlReader]::Load($reader)
     $v = $w.FindName("v")
 
-    # Метод 1: Закрытие по событию (если сработает)
+    # 1. Попытка закрыть по окончании видео
     $v.add_MediaEnded({ $w.Close() })
     
-    # Метод 2: Закрытие по таймеру (гарантированное)
+    # 2. Гарантированное закрытие по таймеру (через $videoDuration сек)
     $timer = New-Object System.Windows.Threading.DispatcherTimer
     $timer.Interval = [TimeSpan]::FromSeconds($videoDuration)
-    $timer.Add_Tick({ $w.Close(); $timer.Stop() })
+    $timer.Add_Tick({ 
+        $w.Close()
+        $timer.Stop()
+    })
     $timer.Start()
 
-    $w.Add_Closing({ $_.Cancel = $true })
+    # УБРАЛИ блокировку Closing, чтобы окно могло закрыться само!
     $w.ShowDialog() | Out-Null
 } 
 catch { exit }
 finally {
-    Start-Sleep -Seconds 1
-    if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
+    # Убиваем процесс, если он вдруг завис
+    Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
 }
