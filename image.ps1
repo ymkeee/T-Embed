@@ -9,8 +9,8 @@ try {
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
 
 # 2. Settings
-$u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/image.png'
-$f = "$env:TEMP\imaga.png"
+$u = 'https://github.com/ymkeee/T-Embed/raw/refs/heads/main/wallpaper.png'
+$f = "$env:TEMP\pusheen.png"
 
 try {
     # Download video
